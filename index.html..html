@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<title>Rak Manhwa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap">
+<style>
+/* Layout: header + pencarian + filter, lalu rak kartu; detail lewat panel bawah */
+:root{--bg:#f3f4fa;--card:#fff;--fg:#171a2b;--mut:#666c85;--line:#e0e2ee;--acc:#4b45d6;--accfg:#fff;--soft:#ecebfd;--warn:#c0353f;--shade:rgba(15,16,32,.5)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1020;--card:#191b30;--fg:#eef0fb;--mut:#9da2c0;--line:#2c2f4a;--acc:#8f89ff;--accfg:#12122a;--soft:#272850;--warn:#ff8a92;--shade:rgba(0,0,0,.65);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1020;--card:#191b30;--fg:#eef0fb;--mut:#9da2c0;--line:#2c2f4a;--acc:#8f89ff;--accfg:#12122a;--soft:#272850;--warn:#ff8a92;--shade:rgba(0,0,0,.65);color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:Inter,system-ui,sans-serif;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 90px}
+main{max-width:980px;margin:0 auto;display:grid;gap:14px}
+h1,h2{font-family:"Space Grotesk",Inter,sans-serif;margin:0;text-wrap:balance}
+h1{font-size:28px}h2{font-size:19px;overflow-wrap:anywhere}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.sub{color:var(--mut);margin-top:2px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:12px;min-height:40px;padding:0 14px;font-weight:600}
+button:disabled{opacity:.45;cursor:default}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.pri,button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--accfg)}
+input,select{background:var(--card);border:1px solid var(--line);border-radius:12px;min-height:44px;padding:0 14px;min-width:0}
+.tools{display:flex;gap:8px;flex-wrap:wrap}.tools input{flex:1 1 200px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chips button{border-radius:99px;font-size:13px;min-height:36px}
+#list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;display:grid;gap:10px;align-content:space-between;min-width:0}
+.head{display:flex;gap:12px;align-items:center;text-align:left;border:0;background:none;padding:0;min-width:0}
+.cov{flex:none;width:46px;height:62px;border-radius:9px;display:grid;place-items:center;font:700 18px "Space Grotesk",sans-serif;color:#fff}
+.name{display:block;line-height:1.35;overflow-wrap:anywhere}
+.meta{display:block;color:var(--mut);font-size:12px;font-weight:500;margin-top:3px}
+.step{display:grid;grid-template-columns:52px 1fr 76px;gap:8px}
+.step button{min-height:46px;font-size:17px}
+.step .num{background:var(--soft);border-color:transparent;font-variant-numeric:tabular-nums}
+.msg{padding:36px 16px;text-align:center;color:var(--mut);grid-column:1/-1}
+.shade{position:fixed;inset:0;background:var(--shade);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{background:var(--bg);width:100%;max-width:520px;max-height:90%;overflow:auto;border-radius:22px 22px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom,0px));display:grid;gap:14px;grid-auto-rows:max-content}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.lab{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:6px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;font-variant-numeric:tabular-nums}
+.grid button,.jump button{padding:0}
+.jump{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.danger{color:var(--warn)}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);border-radius:14px;padding:8px 8px 8px 16px;display:flex;gap:12px;align-items:center;width:max-content;max-width:calc(100% - 32px);z-index:30;font-size:13px}
+#toast button{background:var(--bg);color:var(--fg);border:0}
+</style>
+</head>
+<body>
+<main>
+ <div class="top"><div><h1>Rak Manhwa</h1><div class="sub" id="sum">Memuat daftar…</div></div><button class="pri" id="add" disabled>+ Judul</button></div>
+ <div class="tools"><input id="q" type="search" placeholder="Cari judul" aria-label="Cari judul">
+ <select id="sort" aria-label="Urutkan"><option value="new">Terakhir dibaca</option><option value="az">Judul A–Z</option><option value="ch">Chapter terbanyak</option></select></div>
+ <div class="chips" id="filters"></div>
+ <div id="list"><div class="msg">Daftar bacaanmu akan muncul di sini.</div></div>
+ <div class="chips"><button id="backup">Cadangkan data</button><button id="restore">Pulihkan data</button><input id="file" type="file" accept=".json,application/json" hidden></div>
+ <div class="sub" style="font-size:12px">Data tersimpan di browser ini saja. Cadangkan secara berkala.</div>
+</main>
+<div class="shade" id="shade" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div id="toast" role="status" hidden></div>
+<script>
+const ST=["Sedang Dibaca","Rencana Baca","Hiatus","Selesai","Berhenti"], PF=["Webtoon","KakaoPage","Tapas","Lainnya"];
+const $=s=>document.querySelector(s);
+let col=null, server=new Map(), local=new Map(), jobs=new Map(), filter="Semua", open=null, page=0, writable=true, loaded=false;
+function el(tag,props={},...kids){const e=document.createElement(tag);for(const[k,v]of Object.entries(props)){if(k.startsWith("on"))e[k]=v;else if(k==="class")e.className=v;else if(k in e)e[k]=v;else e.setAttribute(k,v)}e.append(...kids.filter(x=>x!=null));return e}
+function items(){const m=new Map(server);for(const[k,v]of local){v?m.set(k,v):m.delete(k)}return m}
+const clean=n=>Math.max(0,Math.round(n*10)/10);
+const initials=t=>t.replace(/^(the|a)\s+/i,"").split(/[\s-]+/).slice(0,2).map(w=>w[0]||"").join("").toUpperCase();
+const hue=t=>[...t].reduce((a,c)=>(a*31+c.charCodeAt(0))%360,7);
+const when=ms=>ms?"dibaca "+new Date(ms).toLocaleDateString("id-ID",{day:"numeric",month:"short"}):null;
+
+/* satu penulisan per judul dalam satu waktu */
+function save(id,data){local.set(id,data);render();const j=jobs.get(id)||{};jobs.set(id,j);clearTimeout(j.t);j.t=setTimeout(()=>flush(id),data?500:0)}
+async function flush(id){const j=jobs.get(id);if(j.busy)return;j.busy=true;
+ try{while(local.has(id)){const d=local.get(id);d?await col.doc(id).set(d):await col.doc(id).delete();
+   if(local.get(id)===d){d?server.set(id,d):server.delete(id);local.delete(id)}}}
+ catch(e){local.delete(id);if(e.code==="invalid_argument"||e.code==="not_granted")writable=false;toast("Perubahan gagal disimpan. Coba lagi nanti.")}
+ j.busy=false;render()}
+let tt;function toast(text,undo){const t=$("#toast");t.replaceChildren(el("span",{textContent:text}),undo?el("button",{textContent:"Batalkan",onclick:()=>{t.hidden=true;undo()}}):"");t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,5000)}
+function setCh(id,n){const old=items().get(id);if(!old)return;const ch=clean(n);if(ch===old.ch)return;save(id,{...old,ch,updated:Date.now()});toast("Chapter "+ch+" tersimpan",()=>save(id,old))}
+const patch=(id,p)=>{const o=items().get(id);if(o)save(id,{...o,...p})};
+
+function render(){
+ const all=[...items()];
+ if(!loaded)return;
+ const reading=all.filter(([,d])=>d.status===ST[0]).length;
+ $("#sum").textContent=all.length+" judul, "+reading+" sedang dibaca";
+ $("#add").disabled=!writable;
+ $("#filters").replaceChildren(...["Semua",...ST].map(s=>el("button",{textContent:s+" "+(s==="Semua"?all.length:all.filter(([,d])=>d.status===s).length),"aria-pressed":String(filter===s),onclick:()=>{filter=s;render()}})));
+ const q=$("#q").value.trim().toLowerCase(),s=$("#sort").value;
+ const shown=all.filter(([,d])=>(filter==="Semua"||d.status===filter)&&d.title.toLowerCase().includes(q))
+  .sort(([,a],[,b])=>(s==="new"?(b.updated||0)-(a.updated||0):s==="ch"?b.ch-a.ch:0)||a.title.localeCompare(b.title));
+ const focus=document.activeElement?.id;
+ $("#list").replaceChildren(...shown.map(([id,d])=>el("article",{class:"card"},
+  el("button",{class:"head",id:"h-"+id,onclick:()=>openSheet(id)},
+   el("span",{class:"cov",style:`background:linear-gradient(150deg,hsl(${hue(d.title)} 55% 48%),hsl(${(hue(d.title)+50)%360} 60% 28%))`,textContent:initials(d.title),"aria-hidden":"true"}),
+   el("span",{style:"min-width:0"},el("span",{class:"name",textContent:d.title}),el("span",{class:"meta",textContent:[d.status,d.platform,d.rating?"★ "+d.rating:null,when(d.updated)].filter(Boolean).join(" · ")}))),
+  el("div",{class:"step"},
+   el("button",{id:"m-"+id,textContent:"−","aria-label":"Kurangi chapter "+d.title,disabled:!writable||d.ch<=0,onclick:()=>setCh(id,Math.ceil(d.ch)-1)}),
+   el("button",{class:"num",id:"n-"+id,textContent:"Ch. "+d.ch,"aria-label":"Pilih chapter "+d.title,disabled:!writable,onclick:()=>openSheet(id)}),
+   el("button",{class:"pri",id:"p-"+id,textContent:"+1","aria-label":"Tambah chapter "+d.title,disabled:!writable,onclick:()=>setCh(id,Math.floor(d.ch)+1)})))));
+ if(!shown.length)$("#list").append(el("div",{class:"msg",textContent:all.length?"Tidak ada judul yang cocok. Ubah pencarian atau filter.":"Belum ada judul. Tekan + Judul untuk menambah."}));
+ if(focus)document.getElementById(focus)?.focus({preventScroll:true});
+ if(open&&open!=="new")drawSheet();
+}
+function close(){open=null;$("#shade").hidden=true}
+function openSheet(id){open=id;const d=items().get(id);page=Math.max(0,Math.floor((Math.floor(d.ch)-1)/20));$("#shade").hidden=false;$("#sheet").scrollTop=0;drawSheet()}
+const group=(label,node)=>el("div",{},el("div",{class:"lab",textContent:label}),node);
+const choices=(list,cur,pick,fmt=x=>x)=>el("div",{class:"chips"},...list.map(v=>el("button",{textContent:fmt(v),"aria-pressed":String(cur===v),disabled:!writable,onclick:()=>pick(v)})));
+function drawSheet(){const id=open,d=items().get(id);if(!d)return close();
+ const top=$("#sheet").scrollTop, whole=Math.floor(d.ch), dec=Math.round((d.ch-whole)*10);
+ const nums=Array.from({length:20},(_,i)=>page*20+i+1);
+ const jump=(t,n)=>el("button",{textContent:t,disabled:page+n<0,onclick:()=>{page=Math.max(0,page+n);drawSheet()}});
+ $("#sheet").replaceChildren(
+  el("div",{class:"row"},el("h2",{textContent:d.title}),el("button",{textContent:"Tutup",onclick:close})),
+  group("Chapter terakhir: "+d.ch,el("div",{class:"grid"},...nums.map(n=>el("button",{textContent:n,"aria-pressed":String(n===whole),disabled:!writable,onclick:()=>setCh(id,n)})))),
+  el("div",{class:"jump"},jump("« 100",-5),jump("‹ 20",-1),jump("20 ›",1),jump("100 »",5)),
+  group("Bagian chapter (misalnya 112.3)",choices([0,1,2,3,4,5,6,7,8,9],dec,v=>setCh(id,whole+v/10),v=>v?"."+v:"Utuh")),
+  group("Status",choices(ST,d.status,v=>patch(id,{status:v}))),
+  group("Baca di",choices(PF,d.platform,v=>patch(id,{platform:d.platform===v?"":v}))),
+  group("Rating",choices([1,2,3,4,5],d.rating,v=>patch(id,{rating:d.rating===v?0:v}),v=>"★ "+v)),
+  el("button",{class:"danger",textContent:"Hapus judul",disabled:!writable,onclick:e=>{const b=e.target;if(b.dataset.sure){close();save(id,null);toast("Judul dihapus",()=>save(id,d))}else{b.dataset.sure=1;b.textContent="Tekan sekali lagi untuk menghapus"}}}));
+ $("#sheet").scrollTop=top}
+$("#add").onclick=()=>{open="new";const i=el("input",{id:"nt",placeholder:"Judul manhwa",maxLength:200,"aria-label":"Judul manhwa"});
+ $("#sheet").replaceChildren(el("div",{class:"row"},el("h2",{textContent:"Judul baru"}),el("button",{textContent:"Tutup",onclick:close})),
+  el("form",{style:"display:grid;gap:10px",onsubmit:e=>{e.preventDefault();const t=i.value.trim();if(!t)return i.focus();const id=col.doc().id;filter="Semua";$("#q").value="";save(id,{title:t,ch:1,status:ST[0],platform:"",rating:0,updated:Date.now()});openSheet(id)}},i,el("button",{class:"pri",textContent:"Simpan dan pilih chapter"})));
+ $("#shade").hidden=false;i.focus()};
+$("#shade").onclick=e=>{if(e.target.id==="shade")close()};
+addEventListener("keydown",e=>{if(e.key==="Escape")close()});
+$("#q").oninput=render;$("#sort").onchange=render;
+function fail(t){$("#sum").textContent="Daftar belum tersedia";$("#list").replaceChildren(el("div",{class:"msg",textContent:t}))}
+/* data disimpan di browser perangkat ini */
+const KEY="rak-manhwa-v1",SEED={"m01": {"ch": 42, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "Only I Have An EX-Grade Summon", "updated": null}, "m02": {"ch": 57, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "Black-Haired US Army General", "updated": null}, "m03": {"ch": 53, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "A Wimp’s Strategy Guide to Conquer the Tower", "updated": null}, "m04": {"ch": 24, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "Teto X Egen", "updated": null}, "m05": {"ch": 34, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "My Wife Waited for Me in the Wheat Field", "updated": null}, "m06": {"ch": 22, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "The Crazy Villain Comes to His Sanity", "updated": null}, "m07": {"ch": 31, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "My Exclusive Tower Guide", "updated": null}, "m08": {"ch": 22, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "The Regressor and the Blind Saintess", "updated": null}, "m09": {"ch": 148, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "The Unbeatable Dungeons Lazy Boss Monster", "updated": null}, "m10": {"ch": 58, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "Surviving As A Genius On Borrowed Time", "updated": null}, "m11": {"ch": 11, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "Return Of The Dragon Girlfriend", "updated": null}, "m12": {"ch": 112, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "The Investor Who Sees The Future", "updated": null}, "m13": {"ch": 35, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "The Demon King Overrun By Heroes", "updated": null}, "m14": {"ch": 112.3, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "Eternally Regressing Knight", "updated": null}, "m15": {"ch": 99, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "The Ultimate Shut-In", "updated": null}, "m16": {"ch": 31, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "The Ruined World Was Mistaken for a Game", "updated": null}, "m17": {"ch": 35, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "The Immortal Genius Spearman", "updated": null}, "m18": {"ch": 37, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "Sword God’s Livestream", "updated": null}, "m19": {"ch": 48, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "The Apocalypse’s Ultimate Veteran", "updated": null}, "m20": {"ch": 27, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "Money Keeps Piling Up No Matter How Much I Spend", "updated": null}, "m21": {"ch": 69, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "Kidnapped Dragons", "updated": null}, "m22": {"ch": 215, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "The Heavenly Demon Can’t Live a Normal Life", "updated": null}, "m23": {"ch": 316, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "Komi-san wa Komyushou Desu", "updated": null}, "m24": {"ch": 31, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "The Last All-Knowing Man Collected Trillions of Stuff from Day One", "updated": null}, "m25": {"ch": 14, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "The Third Generation Of Chaebols That Dominate", "updated": null}, "m26": {"ch": 22, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "The Sergeant’s Dragon", "updated": null}, "m27": {"ch": 18, "platform": "", "rating": 0, "status": "Sedang Dibaca", "title": "Space Marines Now Have a Status Window", "updated": null}};
+const valid=o=>o&&typeof o==="object"&&!Array.isArray(o)&&Object.values(o).every(d=>d&&typeof d.title==="string"&&Number.isFinite(d.ch)&&d.ch>=0&&ST.includes(d.status));
+const write=m=>localStorage.setItem(KEY,JSON.stringify(Object.fromEntries(m)));
+col={doc:(id="u"+Date.now().toString(36)+Math.random().toString(36).slice(2,6))=>({id,
+ set:async v=>{const m=new Map(server);m.set(id,v);write(m)},delete:async()=>{const m=new Map(server);m.delete(id);write(m)}})};
+$("#backup").onclick=()=>{const u=URL.createObjectURL(new Blob([JSON.stringify(Object.fromEntries(items()),null,1)],{type:"application/json"}));
+ const now=new Date(),a=el("a",{href:u,download:"cadangan-manhwa-"+[now.getFullYear(),now.getMonth()+1,now.getDate()].join("-")+".json"});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),10000);toast("File cadangan diunduh")};
+$("#restore").onclick=()=>$("#file").click();
+$("#file").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+ try{const o=JSON.parse(await f.text());if(!valid(o))throw 0;const m=new Map(Object.entries(o));
+  if(!confirm("Ganti daftar sekarang dengan isi cadangan ("+m.size+" judul)?"))return;
+  write(m);for(const j of jobs.values())clearTimeout(j.t);local.clear();server=m;close();render();toast("Daftar dipulihkan")}
+ catch{toast("Gagal memulihkan. Pilih file cadangan Rak Manhwa.")}};
+addEventListener("pagehide",()=>{if(!local.size)return;try{write(items())}catch{}});
+try{const raw=localStorage.getItem(KEY);const o=raw?JSON.parse(raw):SEED;if(!valid(o))throw 0;server=new Map(Object.entries(o));if(!raw)write(server);loaded=true;render()}
+catch{fail("Penyimpanan browser tidak bisa dibaca. Jangan pakai mode samaran, lalu buka lagi.")}
+</script>
+</body>
+</html>
